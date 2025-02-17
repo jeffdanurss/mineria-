@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Detección Dental</title>
+    <!-- Tailwind CSS -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
+    <!-- FontAwesome para íconos -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <!-- Estilos personalizados -->
+    <link rel="stylesheet" href="/static/css/styles.css">
+</head>
+<body class="bg-gray-50">
+    <div class="min-h-screen">
+        <!-- Header -->
+        <header class="bg-blue-600 text-white shadow-lg">
+            <div class="container mx-auto px-4 py-6">
+                <h1 class="text-3xl font-bold flex items-center">
+                    <i class="fas fa-tooth mr-2"></i> Sistema de Detección de Enfermedades Dentales
+                </h1>
+                <p class="mt-2">Análisis mediante Inteligencia Artificial</p>
+            </div>
+        </header>
+        <!-- Main Content -->
+        <main class="container mx-auto px-4 py-8">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <!-- Image Upload Section -->
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <h2 class="text-xl font-semibold mb-4">Subir Imagen</h2>
+                    <form id="uploadForm" class="space-y-4">
+                        <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                            <!-- Botón para seleccionar imagen -->
+                            <input type="file" id="fileInput" accept="image/*" class="hidden">
+                            <label for="fileInput"
+                                class="cursor-pointer bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
+                                Seleccionar Imagen
+                            </label>
+                            <!-- Botón para abrir la cámara -->
+                            <input type="file" id="cameraInput" accept="image/*" capture="camera" class="hidden">
+                            <label for="cameraInput"
+                                class="cursor-pointer bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 ml-2">
+                                Usar Cámara
+                            </label>
+                        </div>
+                        <!-- Sección de cámara en tiempo real -->
+                        <div id="cameraSection" class="hidden">
+                            <video id="video" autoplay playsinline class="w-full rounded-lg border"></video>
+                            <button id="captureButton" class="w-full bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-600 mt-2">
+                                Capturar Fotograma
+                            </button>
+                            <canvas id="canvas" class="hidden"></canvas>
+                        </div>
+                        <button type="submit"
+                            class="w-full bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">
+                            Procesar Imagen
+                        </button>
+                        <div class="progress-bar" id="progressBar"></div>
+                    </form>
+                </div>
+                <!-- Results Section -->
+                <div class="bg-white rounded-lg shadow-md p-6 results-section">
+                    <h2 class="text-xl font-semibold mb-4">Resultados del Análisis</h2>
+                    <div class="grid grid-cols-3 gap-4">
+                        <div class="image-container">
+                            <h3 class="text-lg font-medium mb-2">Imagen Original</h3>
+                            <img id="originalImage" src="" alt="Imagen Original" class="w-full rounded-lg border hidden" />
+                        </div>
+                        <div class="image-container">
+                            <h3 class="text-lg font-medium mb-2">Modelo YOLO</h3>
+                            <img id="yoloImage" src="" alt="Resultado YOLO" class="w-full rounded-lg border hidden" />
+                        </div>
+                        <div class="image-container">
+                            <h3 class="text-lg font-medium mb-2">Modelo Personalizado</h3>
+                            <img id="customImage" src="" alt="Resultado Personalizado" class="w-full rounded-lg border hidden" />
+                        </div>
+                    </div>
+                    <!-- Sección de Resultados de Detección -->
+                    <div id="detectionResults" class="detection-results hidden mt-6">
+                        <h3 class="text-lg font-semibold mb-3">Resultados del Modelo YOLO:</h3>
+                        <div id="yoloDetections"></div>
+                        <h3 class="text-lg font-semibold mb-3 mt-6">Resultados del Modelo Personalizado:</h3>
+                        <div id="customDetections"></div>
+                    </div>
+                    <!-- Imágenes animadas -->
+                    <div class="mt-6">
+                        <img src="/static/images/dental-animation.gif" alt="Animación Odontológica" class="animated-image" />
+                    </div>
+                </div>
+            </div>
+            <!-- Chat Section -->
+            <div class="mt-8 bg-white rounded-lg shadow-md p-6">
+                <h2 class="text-xl font-semibold mb-4">Recomendaciones</h2>
+                <div id="recommendations" class="chat-container bg-gray-50 p-4 rounded-lg mb-4">
+                    <p class="text-gray-500">Aquí aparecerán las recomendaciones basadas en el análisis.</p>
+                </div>
+            </div>
+        </main>
+    </div>
+    <!-- Scripts -->
+    <script src="/static/js/main.js"></script>
+</body>
+</html>

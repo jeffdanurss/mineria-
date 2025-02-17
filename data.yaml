@@ -1,0 +1,5 @@
+train: C:/Users/HP VICTUS/Downloads/setdentalyolo/setdentalyolo/train
+val: C:/Users/HP VICTUS/Downloads/setdentalyolo/setdentalyolo/val  # Si usas el 100% de los datos para entrenamiento
+
+nc: 5  # Número de clases
+names: ['cancer', 'caries', 'gingivitis', 'perdidos', 'ulceras']  # Nombres de las clases
