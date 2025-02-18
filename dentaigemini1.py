@@ -11,6 +11,7 @@ from werkzeug.utils import secure_filename
 from datetime import datetime
 from pathlib import PosixPath, WindowsPath
 import pathlib
+import markdown
 import google.generativeai as genai  # Para Gemini
 import pandas as pd  # Para leer el archivo CSV
 from dotenv import load_dotenv
@@ -135,39 +136,72 @@ def process_yolo_with_selected_model(image_path, selected_model):
     cv2.imwrite(YOLO_RESULT_IMAGE, original_img)
     return detected_diseases
 
+# Función para generar embeddings con Gemini
 
-# Cargar el archivo CSV de recomendaciones
-recommendations_df = pd.read_csv('recomendacion_corregido.csv')
-recommendations_df['confianza'] = recommendations_df['confianza'].str.rstrip('%').astype(float)
-
-
-# Función para obtener una recomendación inicial desde el CSV
-def get_initial_recommendation(disease, confidence):
-    filtered_df = recommendations_df[recommendations_df['enfermedad'] == disease]
-    if filtered_df.empty:
-        return "No se encontraron recomendaciones específicas para esta enfermedad."
-    closest_row = filtered_df[filtered_df['confianza'] <= confidence].sort_values(by='confianza', ascending=False).iloc[
-        0]
-    return closest_row['recomendación']
+def generate_embedding(text):
+    try:
+        result = genai.embed_content(
+            model="models/text-embedding-004",  # Modelo de embeddings
+            content=text
+        )
+        return result['embedding']
+    except Exception as e:
+        print(f"Error al generar el embedding: {e}")
+        return None
 
 
-# Función para refinar la recomendación usando Gemini
-def refine_with_gemini(initial_recommendation, disease, confidence):
+# Diccionario de enfermedades y sus descripciones
+diseases = {
+    "caries": "Enfermedad dental causada por bacterias que destruyen el esmalte.",
+    "gingivitis": "Inflamación de las encías debido a la acumulación de placa.",
+    "cancer": "Crecimiento anormal de células en la cavidad oral.",
+    "ulceras": "Llagas o heridas en la mucosa oral.",
+    "perdidos": "Pérdida de dientes debido a trauma o enfermedad."
+}
+
+# Generar y almacenar embeddings
+disease_embeddings = {disease: generate_embedding(description) for disease, description in diseases.items()}
+
+
+# Función para calcular la similitud del coseno
+def cosine_similarity(vec1, vec2):
+    return np.dot(vec1, vec2) / (np.linalg.norm(vec1) * np.linalg.norm(vec2))
+
+
+# Función para encontrar la enfermedad más similar
+def find_most_similar_disease(detected_disease, disease_embeddings):
+    detected_embedding = generate_embedding(detected_disease)
+    similarities = {
+        disease: cosine_similarity(detected_embedding, embedding)
+        for disease, embedding in disease_embeddings.items()
+    }
+    return max(similarities, key=similarities.get)
+emoji_map = {
+    "caries": "🦷",
+    "gingivitis": "🩸",
+    "cancer": "⚠️",
+    "ulceras": "疮",
+    "perdidos": "❌"
+}
+# Función para generar una recomendación con Gemini
+def generate_recommendation_with_gemini(disease):
+    emoji = emoji_map.get(disease, "✨")  # Emoji
+    #print(disease)
     prompt = (
-        f"Basado en esta recomendación inicial: '{initial_recommendation}', "
-        f"genera una nueva recomendación médica detallada para {disease}. "
-        f"No repitas la recomendación inicial ni el prompt, di algo que sea convincente, en español como un médico. "
-        f"Empieza diciendo: 'No reemplazo a un profesional en el área, pero mi recomendación es:' y luego lo que recomiendes."
+        f"Actúa como un odontólogo profesional especializado en enfermedades dentales pero con un tono amigable y cercano, como si estuvieras chateando por WhatsApp. 😊 "
+        f"Explica qué es {disease} y da consejos útiles sobre cómo tratarla o prevenirla SOLO para la enfermedad dental {disease}. Usa emojis para hacerlo más dinámico y fácil de entender. 🦷✨ "
+        f"Empieza diciendo: 'Hola 👋, aquí tienes algunos consejos sobre {disease}:'. "
+        f"Incluye tratamientos caseros y recuerda que no reemplazas a un profesional. 🚨"
     )
     try:
-        model = genai.GenerativeModel("gemini-pro")  # Corrección aquí
-        response = model.generate_content(prompt)  # Corrección aquí
-        refined_recommendation = response.text.strip()  # Corrección aquí
-        return refined_recommendation
+        model = genai.GenerativeModel("gemini-pro")
+        response = model.generate_content(prompt)
+        plain_text_recommendation = markdown.markdown(response.text.strip())
+        return plain_text_recommendation
+        #return response.text.strip()
     except Exception as e:
         print(f"Error al generar la recomendación con Gemini: {e}")
         return "Ocurrió un error al generar la recomendación. Consulta a un especialista."
-
 
 @app.route('/')
 def index():
@@ -204,11 +238,12 @@ def upload_file():
     best_detection = max(all_detections, key=lambda x: x[1])  # Selecciona la detección con la mayor confianza
     best_disease, best_confidence = best_detection
 
-    # Obtener la recomendación inicial desde el archivo CSV
-    initial_recommendation = get_initial_recommendation(best_disease, best_confidence * 100)  # Convertir a porcentaje
+    # Encontrar la enfermedad más similar usando embeddings
+    most_similar_disease = find_most_similar_disease(best_disease, disease_embeddings)
+    print(most_similar_disease)
 
     # Refinar la recomendación usando Gemini
-    refined_recommendation = refine_with_gemini(initial_recommendation, best_disease, best_confidence * 100)
+    refined_recommendation = generate_recommendation_with_gemini(most_similar_disease)
 
     return jsonify({
         'original': '/static/uploads/original.jpg',

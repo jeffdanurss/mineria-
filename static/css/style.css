@@ -72,3 +72,77 @@ video {
     border-radius: 5px; /* Bordes redondeados */
     margin-top: 10px; /* Espaciado superior */
 }
+.chat-container {
+    display:flex;
+    flex-direction:column;
+    gap: 10px; /* Espacio entre los mensajes */
+    max-height: 384px; /* Altura máxima del contenedor */
+    overflow-y: auto; /* Barra de desplazamiento */
+}
+
+.message {
+    margin-bottom: 15px;
+    padding: 10px 15px;
+    border-radius: 15px;
+    font-size: 14px;
+    line-height: 1.4;
+    word-wrap: break-word;
+    max-width: 70%;
+}
+
+.user-message {
+    background-color: #dcf8c6; /* Color verde claro */
+    align-self: flex-end;
+    color: #000;
+}
+
+.bot-message {
+    background-color: #ececec; /* Color gris claro */
+    align-self: flex-start;
+    color: #000;
+}
+/* Estilos para la ventana emergente */
+.modal {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+}
+
+.modal-content {
+    background-color: white;
+    padding: 20px;
+    border-radius: 8px;
+    text-align: center;
+    max-width: 400px;
+    width: 90%;
+}
+
+.modal-content h2 {
+    margin-bottom: 10px;
+    color: #333;
+}
+
+.modal-content ul {
+    text-align: left;
+    margin-bottom: 20px;
+}
+
+.modal-content button {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.modal-content button:hover {
+    background-color: #0056b3;
+}

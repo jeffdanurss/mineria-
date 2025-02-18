@@ -69,7 +69,39 @@ captureButton.addEventListener('click', () => {
     }
     cameraSection.classList.add('hidden');
 });
+// Función para mostrar recomendaciones en el chat
+function showRecommendation(message) {
+    const chatContainer = document.getElementById('recommendations');
 
+    // Crear un nuevo mensaje del bot
+    const botMessage = document.createElement('div');
+    botMessage.classList.add('message', 'bot-message');
+    botMessage.innerHTML = `<p>${message}</p>`;
+
+    // Añadir el mensaje al contenedor
+    chatContainer.appendChild(botMessage);
+
+    // Desplazar automáticamente hacia abajo
+    chatContainer.scrollTop = chatContainer.scrollHeight;
+}
+// Mostrar la ventana emergente al cargar la página
+document.addEventListener('DOMContentLoaded', () => {
+    const modal = document.getElementById('modal');
+    const closeModalButton = document.getElementById('closeModal');
+
+    // Mostrar la ventana emergente
+    modal.style.display = 'flex';
+
+    // Cerrar la ventana emergente al hacer clic en "Entendido"
+    closeModalButton.addEventListener('click', () => {
+        modal.style.display = 'none';
+    });
+});
+// Simular una respuesta inicial del bot
+document.addEventListener('DOMContentLoaded', () => {
+    const initialMessage = "Hola 👋, aquí aparecerán las recomendaciones basadas en el análisis.";
+    showRecommendation(initialMessage);
+});
 // Procesar imagen
 uploadForm.onsubmit = async (e) => {
     e.preventDefault();
@@ -142,9 +174,9 @@ uploadForm.onsubmit = async (e) => {
         } else {
             customDetections.innerHTML = '<div class="no-detections"><p>No se han detectado enfermedades en el modelo personalizado.</p></div>';
         }
-        // Mostrar la recomendación generada por DistilGPT-2
+        // Mostrar la recomendación generada por gemini
         if (data.recommendation) {
-            recommendations.innerHTML = `<p class="text-gray-600">${data.recommendation}</p>`;
+            showRecommendation(data.recommendation);
         }
     } catch (error) {
         clearInterval(interval);
