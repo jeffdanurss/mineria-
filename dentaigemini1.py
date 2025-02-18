@@ -266,4 +266,6 @@ def handle_message(message):
 
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
+    import os
+    port = int(os.environ.get('PORT', 5000))
     socketio.run(app, debug=True, allow_unsafe_werkzeug=True, host='0.0.0.0', port=5000)
