@@ -103,6 +103,10 @@ def predict_custom_model(image_path):
     predicted_class = np.argmax(class_output, axis=1)[0]
     class_name = label_map[predicted_class]
     confidence = class_output[0][predicted_class]
+    # Filtrar por el umbral de confianza
+    if confidence < THRESHOLD:
+        return {"error": "La imagen no contiene dientes o no es válida. Intenta con otra imagen."}
+
     bbox = bbox_output[0]
     height, width, _ = original_img.shape
     x1, y1, x2, y2 = (bbox * [width, height, width, height]).astype(int)
@@ -114,6 +118,8 @@ def predict_custom_model(image_path):
     cv2.imwrite(CUSTOM_RESULT_IMAGE, original_img)
     return class_name, confidence
 
+# Umbral de confianza para las predicciones
+THRESHOLD = 0.2  # Puedes ajustar este valor según tus necesidades
 
 # Función para procesar con el modelo YOLO seleccionado
 def process_yolo_with_selected_model(image_path, selected_model):
@@ -125,15 +131,19 @@ def process_yolo_with_selected_model(image_path, selected_model):
         confidences = result.boxes.conf.cpu().numpy()  # Obtener las confianzas
         class_ids = result.boxes.cls.cpu().numpy()  # Obtener los IDs de las clases
         for box, conf, cls_id in zip(boxes, confidences, class_ids):
-            x1, y1, x2, y2 = map(int, box)
-            label = selected_model.names[int(cls_id)]  # Obtener el nombre de la clase
-            confidence = float(conf)
-            color = (0, 255, 0)
-            cv2.rectangle(original_img, (x1, y1), (x2, y2), color, 2)
-            label_text = f'{label} {confidence:.2f}'
-            cv2.putText(original_img, label_text, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
-            detected_diseases.append((label, confidence))
+            if conf >= THRESHOLD:  # Filtrar por el umbral de confianza
+                x1, y1, x2, y2 = map(int, box)
+                label = selected_model.names[int(cls_id)]  # Obtener el nombre de la clase
+                confidence = float(conf)
+                color = (0, 255, 0)
+                cv2.rectangle(original_img, (x1, y1), (x2, y2), color, 2)
+                label_text = f'{label} {confidence:.2f}'
+                cv2.putText(original_img, label_text, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
+                detected_diseases.append((label, confidence))
     cv2.imwrite(YOLO_RESULT_IMAGE, original_img)
+    # Si no se detectaron enfermedades, devolver un mensaje
+    if not detected_diseases:
+        return {"error": "La imagen no contiene dientes o no es válida. Intenta con otra imagen."}
     return detected_diseases
 
 # Función para generar embeddings con Gemini
@@ -224,10 +234,18 @@ def upload_file():
     selected_model = load_model_based_on_image(ORIGINAL_IMAGE)
 
     # Predicciones del modelo personalizado
-    custom_class, custom_conf = predict_custom_model(ORIGINAL_IMAGE)
-
+    custom_class = predict_custom_model(ORIGINAL_IMAGE)
+    if custom_class is None:
+        return jsonify({"message": "La imagen no contiene dientes o no es válida. Intenta con otra imagen."}), 200
+    custom_class, custom_conf = custom_class
     # Predicciones del modelo YOLO seleccionado
     yolo_detections = process_yolo_with_selected_model(ORIGINAL_IMAGE, selected_model)
+    #yolo_results = [
+    #    {'disease': disease, 'confidence': f"{confidence * 100:.1f}%"}
+    #    for disease, confidence in yolo_detections
+    #]
+    if yolo_detections is None:
+        return jsonify({"message": "La imagen no contiene dientes o no es válida. Intenta con otra imagen."}), 200
     yolo_results = [
         {'disease': disease, 'confidence': f"{confidence * 100:.1f}%"}
         for disease, confidence in yolo_detections
