@@ -1,5 +1,5 @@
-train: C:/Users/HP VICTUS/Downloads/setdentalyolo/setdentalyolo/train/images
-val: C:/Users/HP VICTUS/Downloads/setdentalyolo/setdentalyolo/val/images  #  100% de los datos para entrenamiento
+train: C:/Users/HP VICTUS/Downloads/Kalkulus.v1i.yolov11/train/images
+val: C:/Users/HP VICTUS/Downloads/Kalkulus.v1i.yolov11/valid/images  #  100% de los datos para entrenamiento
 
-nc: 5  # Número de clases
-names: ['cancer', 'caries', 'gingivitis', 'perdidos', 'ulceras']  # Nombres de las clases
+nc: 2 # Número de clases
+names: ['calculus', 'plaque']  # Nombres de las clases

@@ -54,6 +54,8 @@ def is_grayscale(image_path):
     else:  # Imagen a color (3 canales)
         return False
 
+# Lista de modelos YOLO divididos
+#YOLO_MODELS = ['modelos/best1.pt', 'modelos/best2.pt']
 
 # Función para cargar el modelo adecuado según el tipo de imagen
 def load_model_based_on_image(image_path):
@@ -61,12 +63,12 @@ def load_model_based_on_image(image_path):
         print("Imagen detectada como rayos X. Cargando modelo 'bestx.pt'...")
         return YOLO('modelos/bestx.pt')  # Modelo para rayos X
     else:
-        print("Imagen detectada como a color. Cargando modelo 'best.pt'...")
-        return YOLO('modelos/best.pt')  # Modelo para imágenes a color
-
+        print("Imagen detectada como a color.  Cargando modelos 'best1.pt' y 'best2.pt'...")
+        #return YOLO('modelos/best.pt')  # Modelo para imágenes a color
+        return [YOLO('modelos/best1.pt'), YOLO('modelos/best2.pt')] # Cargar ambos modelos
 
 # Cargar modelo personalizado
-label_map = {0: "cancer", 1: "caries", 2: "gingivitis", 3: "perdidos", 4: "ulceras"}
+label_map = {0: "cancer", 1: "caries", 2: "gingivitis", 3: "calculus", 4: "placa"}
 
 
 def iou_metric(y_true, y_pred):
@@ -119,28 +121,32 @@ def predict_custom_model(image_path):
     return class_name, confidence
 
 # Umbral de confianza para las predicciones
-THRESHOLD = 0.2  # Puedes ajustar este valor según tus necesidades
+THRESHOLD = 0.01  # Puedes ajustar este valor según tus necesidades
 
 # Función para procesar con el modelo YOLO seleccionado
-def process_yolo_with_selected_model(image_path, selected_model):
+def process_yolo_with_selected_model(image_path, selected_models):
     original_img = cv2.imread(image_path)
-    results = selected_model(image_path)  # YOLOv8 devuelve resultados directamente
     detected_diseases = []
-    for result in results:
-        boxes = result.boxes.xyxy.cpu().numpy()  # Obtener las cajas delimitadoras
-        confidences = result.boxes.conf.cpu().numpy()  # Obtener las confianzas
-        class_ids = result.boxes.cls.cpu().numpy()  # Obtener los IDs de las clases
-        for box, conf, cls_id in zip(boxes, confidences, class_ids):
-            if conf >= THRESHOLD:  # Filtrar por el umbral de confianza
-                x1, y1, x2, y2 = map(int, box)
-                label = selected_model.names[int(cls_id)]  # Obtener el nombre de la clase
-                confidence = float(conf)
-                color = (0, 255, 0)
-                cv2.rectangle(original_img, (x1, y1), (x2, y2), color, 2)
-                label_text = f'{label} {confidence:.2f}'
-                cv2.putText(original_img, label_text, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
-                detected_diseases.append((label, confidence))
+
+    for model in selected_models:  # Iterar sobre todos los modelos seleccionados
+        results = model(image_path)  # Procesar con cada modelo
+        for result in results:
+            boxes = result.boxes.xyxy.cpu().numpy()  # Obtener las cajas delimitadoras
+            confidences = result.boxes.conf.cpu().numpy()  # Obtener las confianzas
+            class_ids = result.boxes.cls.cpu().numpy()  # Obtener los IDs de las clases
+            for box, conf, cls_id in zip(boxes, confidences, class_ids):
+                if conf >= THRESHOLD:  # Filtrar por el umbral de confianza
+                    x1, y1, x2, y2 = map(int, box)
+                    label = model.names[int(cls_id)]  # Obtener el nombre de la clase
+                    confidence = float(conf)
+                    color = (0, 255, 0)
+                    cv2.rectangle(original_img, (x1, y1), (x2, y2), color, 2)
+                    label_text = f'{label} {confidence:.2f}'
+                    cv2.putText(original_img, label_text, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
+                    detected_diseases.append((label, confidence))
+
     cv2.imwrite(YOLO_RESULT_IMAGE, original_img)
+
     # Si no se detectaron enfermedades, devolver un mensaje
     if not detected_diseases:
         return {"error": "La imagen no contiene dientes o no es válida. Intenta con otra imagen."}
@@ -165,8 +171,8 @@ diseases = {
     "caries": "Enfermedad dental causada por bacterias que destruyen el esmalte.",
     "gingivitis": "Inflamación de las encías debido a la acumulación de placa.",
     "cancer": "Crecimiento anormal de células en la cavidad oral.",
-    "ulceras": "Llagas o heridas en la mucosa oral.",
-    "perdidos": "Pérdida de dientes debido a trauma o enfermedad."
+    "calculus": "sarro acumulacion de sales de calcio y de fosforo sobre la superficie dental.",
+    "placa": " película pegajosa y blanda que se forma continuamente sobre la superficie de los dientes."
 }
 
 # Generar y almacenar embeddings
@@ -190,8 +196,8 @@ emoji_map = {
     "caries": "🦷",
     "gingivitis": "🩸",
     "cancer": "⚠️",
-    "ulceras": "疮",
-    "perdidos": "❌"
+    "calculo": "疮",
+    "placa": "❌"
 }
 # Función para generar una recomendación con Gemini
 def generate_recommendation_with_gemini(disease):
@@ -231,7 +237,7 @@ def upload_file():
     file.save(ORIGINAL_IMAGE)
 
     # Seleccionar el modelo adecuado según el tipo de imagen
-    selected_model = load_model_based_on_image(ORIGINAL_IMAGE)
+    selected_models = load_model_based_on_image(ORIGINAL_IMAGE)
 
     # Predicciones del modelo personalizado
     custom_class = predict_custom_model(ORIGINAL_IMAGE)
@@ -239,11 +245,14 @@ def upload_file():
         return jsonify({"message": "La imagen no contiene dientes o no es válida. Intenta con otra imagen."}), 200
     custom_class, custom_conf = custom_class
     # Predicciones del modelo YOLO seleccionado
-    yolo_detections = process_yolo_with_selected_model(ORIGINAL_IMAGE, selected_model)
+    yolo_detections = process_yolo_with_selected_model(ORIGINAL_IMAGE, selected_models)
     #yolo_results = [
     #    {'disease': disease, 'confidence': f"{confidence * 100:.1f}%"}
     #    for disease, confidence in yolo_detections
     #]
+    # Verificar si yolo_detections es un diccionario de error
+    if isinstance(yolo_detections, dict) and 'error' in yolo_detections:
+        return jsonify({"message": yolo_detections['error']}), 200
     if yolo_detections is None:
         return jsonify({"message": "La imagen no contiene dientes o no es válida. Intenta con otra imagen."}), 200
     yolo_results = [
