@@ -1,5 +1,5 @@
-train: C:/Users/HP VICTUS/Downloads/Kalkulus.v1i.yolov11/train/images
-val: C:/Users/HP VICTUS/Downloads/Kalkulus.v1i.yolov11/valid/images  #  100% de los datos para entrenamiento
+train: C:/Users/HP VICTUS/Downloads/set800yolo11 (1)/set800yolo11/train/images
+val: C:/Users/HP VICTUS/Downloads/set800yolo11 (1)/set800yolo11/valid/images  #  100% de los datos para entrenamiento
 
-nc: 2 # Número de clases
-names: ['calculus', 'plaque']  # Nombres de las clases
+nc: 7 # Número de clases
+names: ['calculo', 'cancer', 'caries', 'gingivitis', 'perdidos', 'placa', 'ulceras'] # Nombres de las clases

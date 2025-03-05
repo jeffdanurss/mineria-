@@ -1,1 +1,1 @@
-web: python dentaigemini1.py
+web: python dentai1.py
